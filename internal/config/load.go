@@ -192,6 +192,20 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 		config, configExists := c.Providers.Get(string(p.ID))
 		// if the user configured a known provider we need to allow it to override a couple of parameters
 		if configExists {
+			// Read API key from file if specified (takes precedence over inline api_key).
+			if config.APIKeyFile != "" {
+				if keyFile, resolveErr := resolver.ResolveValue(config.APIKeyFile); resolveErr == nil && keyFile != "" {
+					if data, readErr := os.ReadFile(keyFile); readErr == nil {
+						if keyLine := strings.TrimSpace(strings.SplitN(string(data), "\n", 2)[0]); keyLine != "" {
+							config.APIKey = keyLine
+						}
+					} else {
+						slog.Warn("Failed to read API key file", "provider", p.ID, "file", keyFile, "error", readErr)
+					}
+				} else if resolveErr != nil {
+					slog.Warn("Failed to resolve API key file path", "provider", p.ID, "file", config.APIKeyFile, "error", resolveErr)
+				}
+			}
 			if config.BaseURL != "" {
 				p.APIEndpoint = config.BaseURL
 			}
@@ -396,6 +410,21 @@ func (c *Config) configureProviders(ctx context.Context, store *ConfigStore, env
 	for id, providerConfig := range c.Providers.Seq2() {
 		if knownProviderNames[id] {
 			continue
+		}
+
+		// Read API key from file if specified (takes precedence over inline api_key).
+		if providerConfig.APIKeyFile != "" {
+			if keyFile, resolveErr := resolver.ResolveValue(providerConfig.APIKeyFile); resolveErr == nil && keyFile != "" {
+				if data, readErr := os.ReadFile(keyFile); readErr == nil {
+					if keyLine := strings.TrimSpace(strings.SplitN(string(data), "\n", 2)[0]); keyLine != "" {
+						providerConfig.APIKey = keyLine
+					}
+				} else {
+					slog.Warn("Failed to read API key file", "provider", id, "file", keyFile, "error", readErr)
+				}
+			} else if resolveErr != nil {
+				slog.Warn("Failed to resolve API key file path", "provider", id, "file", providerConfig.APIKeyFile, "error", resolveErr)
+			}
 		}
 
 		// Make sure the provider ID is set.

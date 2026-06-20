@@ -98,6 +98,9 @@ type ProviderConfig struct {
 	Type catwalk.Type `json:"type,omitempty" jsonschema:"description=Provider type that determines the API format,default=openai"`
 	// The provider's API key.
 	APIKey string `json:"api_key,omitempty" jsonschema:"description=API key for authentication with the provider,example=$OPENAI_API_KEY"`
+	// Path to a file containing the API key. If set, the first line of the file
+	// is read and used as the API key, taking precedence over api_key.
+	APIKeyFile string `json:"api_key_file,omitempty" jsonschema:"description=Path to a file containing the API key. The first line of the file is read and used as the API key. If both api_key and api_key_file are set, api_key_file takes precedence.,example=/run/secrets/api-key"`
 	// The original API key template before resolution (for re-resolution on auth errors).
 	APIKeyTemplate string `json:"-"`
 	// OAuthToken for providers that use OAuth2 authentication.
